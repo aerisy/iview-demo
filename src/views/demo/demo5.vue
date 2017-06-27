@@ -7,48 +7,59 @@
                 <Option v-for="type in tag_types" :key="type" :name="type" :value="type.value">{{ type.text }}</Option>
                 <!--<Option value="qq">QQ</Option>-->
             </Select>
-            <Button icon="ios-plus-empty" slot="append" type="dashed" size="small" @click="handleAdd">添加</Button>
+            <Button icon="plus" slot="append" type="dashed" size="small" @click="handleAdd">添加</Button>
             </Input>
-            <!--<div v-for="(key,value) in tag_group">
-
-                <p>{{ key }}</p>
-                <p>111</p>
-            </div>-->
             </Col>
         </Row>
-        <Row type="flex" justify="center" align="middle">
-
-            <template v-for="item in tag_group">
-                <Col span="18">
-                {{item.key}}
-                <Tag v-for="ii in item.value" :key="item.key" :name="ii" closable @on-close="handleClose2">{{ ii }}
-                </Tag>
-                </Col>
-            </template>
+        <Row type="flex" justify="center" align="middle" v-for="item in tag_group" style="min-height: 30px;"
+             :key="item">
+            <!--<template v-for="item in tag_group">-->
+            <Col span="1">
+            <Icon type="pricetag"></Icon>
+            <Label>{{item.text}}</Label>
+            </Col>
+            <Col span="17">
+            <Tag v-for="ii in item.value" :key="item.key" :name="item.key+','+ii" closable @on-close="handleClose2">
+                {{ ii }}
+            </Tag>
+            </Col>
+            <!--</template>-->
         </Row>
     </div>
 </template>
 <script>
     export default {
         created: function () {
-            this.tag_types = [
-                {text: 'QQ', value: 'QQ'},
-                {text: '微信', value: 'WECHAT'},
-                {text: '手机', value: 'TEL'}
-            ];
+            let _this = this;
             let group = [];
-            const tagtps = this.tag_types;
-            for (const i in this.tag_types) {
-//                console.log(tagtps[i].value);
-//                group.set(tagtps[i].value, ['11', '22']);
-                group.push({
-                    key: tagtps[i].value,
-                    value: ['11', '22']
-                });
-            }
-            this.tag_group = group;
-            console.log("tag group");
-            console.log(this.tag_group);
+            _this.$http.get('/getTagType')
+                .then(function (response) {
+                    // success
+                    console.log(response.data.type);
+                    _this.tag_types = response.data.type;
+
+                    const tagtps = _this.tag_types;
+                    for (const i in _this.tag_types) {
+                        group.push({
+                            key: tagtps[i].value,
+                            text: tagtps[i].text,
+                            value: []
+                        });
+                    }
+                    _this.tag_group = group;
+                    console.log("tag group");
+                    console.log(_this.tag_group);
+                }).catch(function (error) {
+                //error
+                console.log('ERROR axios get!');
+                console.log(error);
+            })
+//            this.tag_types = [
+//                {text: 'QQ', value: 'QQ'},
+//                {text: '微信', value: 'WECHAT'},
+//                {text: '手机', value: 'TEL'}
+//            ];
+
         },
         data () {
             return {
@@ -65,28 +76,37 @@
                 this.tag_text = this.tag_text.replace("，", ",");
                 const text_arr = this.tag_text.split(",");
                 const text_type = this.tag_type;
+                const group = this.tag_group;
                 console.log(text_arr);
-                for (const i in text_arr) {
-                    const text = text_arr[i];
-                    console.log(text);
-                    if (text.length > 0 && text_type.length > 0) {
-                        const index = this.tag_content.indexOf(text_arr[i]);
-                        console.log("type group");
-                        console.log(this.tag_group.get(text_type));
-                        this.tag_group.get(text_type).push(text_arr[i]);
-                        console.log(this.tag_group.get(text_type));
-                        if (index < 0) {
-                            this.tag_content.push(text_arr[i]);
-                        } else {
-                            this.$Notice.warning({
-                                title: text + " 已存在！",
-                                desc: ''
-                            });
-//                            this.$Message.warning(text+" 已存在！");
+                console.log(group);
+
+                for (const j in group) {
+                    if (text_type === group[j].key) {
+                        for (const i in text_arr) {
+                            const text = text_arr[i];
+                            console.log(text);
+                            console.log(text_type);
+                            if (text.length > 0 && text_type.length > 0) {
+                                const index = group[j].value.indexOf(text_arr[i]);
+                                console.log(index);
+//                                console.log(this.tag_group.get(text_type));
+//                                this.tag_group.get(text_type).push(text_arr[i]);
+//                                console.log(this.tag_group.get(text_type));
+                                if (index < 0) {
+                                    group[j].value.push(text_arr[i]);
+                                } else {
+                                    this.$Notice.warning({
+                                        title: text + " 已存在！",
+                                        desc: ''
+                                    });
+                                }
+                            }
                         }
                     }
                 }
-                console.log(text_type);
+
+
+                console.log("after" + text_type);
                 if (text_type.length == 0) {
 
                 } else {
@@ -99,10 +119,43 @@
                  }*/
             },
             handleClose2 (event, name) {
-                const index = this.tag_content.indexOf(name);
-                this.tag_content.splice(index, 1);
+                //type value
+                const arr = name.split(",");
+                for (const i in this.tag_group) {
+                    const num_arr = this.tag_group[i].value;
+                    if (this.tag_group[i].key === arr[0]) {
+                        const index = num_arr.indexOf(arr[1]);
+                        num_arr.splice(index, 1);
+                    }
+                }
                 /*const index = this.count.indexOf(name);
                  this.count.splice(index, 1);*/
+            },
+            saveArticle(){
+                let _this = this;
+                _this.$http.request({
+                    method: options.method || 'post',
+                    url: `${options.url}`,
+                    headers: {
+                        'Content-Type': options.contentType || 'application/json'
+                    },
+                    params: options.params,
+                    data: options.data || {},
+                    // transformRequest: [function(data) {
+                    //     // 这里可以在发送请求之前对请求数据做处理，比如form-data格式化等，这里可以使用开头引入的Qs（这个模块在安装axios的时候就已经安装了，不需要另外安装）
+                    //     data = qs.stringify(data);
+                    //     return data;
+                    // }],
+                    timeout: options.timeout || 30 * 1000
+                }).then(function (response) {
+                    // success
+                    console.log(response.data.type);
+                    _this.tag_types = response.data.type;
+                }).catch(function (error) {
+                    //error
+                    console.log('ERROR axios get!');
+                    console.log(error);
+                })
             }
         }
     }
