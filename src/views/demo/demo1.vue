@@ -30,6 +30,10 @@
 </template>
 <script>
     export default {
+        created: function () {
+            console.log("route param:")
+            console.log(this.$route.params.rdata);
+        },
         data () {
             return {
                 telephone: [

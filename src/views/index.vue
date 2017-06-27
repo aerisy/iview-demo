@@ -68,7 +68,7 @@
                 this.$refs[name].validate((valid) => {
                     if (valid) {
                         this.$Message.success('登陆成功!');
-                        this.$router.push({ name: 'demo1' });
+                        this.$router.push({ name: 'demo1' ,params:{rdata:'hahahahah'}});
                     } else {
                         this.$Message.error('表单验证失败!');
                     }
